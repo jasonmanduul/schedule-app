@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Засгийн газрын цаг хуваарь</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; color: #1f1f1f; }
+
+  .header {
+    background: #1a237e;
+    color: #fff;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .header-title { font-size: 15px; font-weight: 600; }
+  .header-sub { font-size: 11px; opacity: 0.75; margin-top: 2px; }
+
+  .view-tabs {
+    display: flex; gap: 4px; background: rgba(255,255,255,0.15);
+    padding: 3px; border-radius: 8px;
+  }
+  .view-tab {
+    padding: 5px 12px; font-size: 12px; border-radius: 6px;
+    cursor: pointer; color: rgba(255,255,255,0.8);
+    border: none; background: transparent; transition: all 0.15s;
+  }
+  .view-tab.active { background: #fff; color: #1a237e; font-weight: 600; }
+
+  .toolbar {
+    background: #fff; border-bottom: 1px solid #e0e0e0;
+    padding: 10px 20px; display: flex; align-items: center;
+    gap: 10px; flex-wrap: wrap;
+  }
+
+  .role-pill {
+    padding: 4px 12px; border-radius: 20px; font-size: 12px;
+    cursor: pointer; border: 1.5px solid transparent;
+    font-weight: 500; transition: all 0.15s; user-select: none;
+  }
+  .role-pill.s   { background: #ede7f6; color: #4527a0; border-color: #9575cd; }
+  .role-pill.ds  { background: #e8f5e9; color: #1b5e20; border-color: #66bb6a; }
+  .role-pill.tn  { background: #fff3e0; color: #e65100; border-color: #ffa726; }
+  .role-pill.gd  { background: #fce4ec; color: #880e4f; border-color: #f48fb1; }
+  .role-pill.off { opacity: 0.3; }
+
+  .nav-group { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  .nav-btn {
+    width: 30px; height: 30px; border-radius: 6px;
+    border: 1px solid #e0e0e0; background: #fff;
+    cursor: pointer; font-size: 14px; display: flex;
+    align-items: center; justify-content: center;
+  }
+  .nav-btn:hover { background: #f0f0f0; }
+  .period-lbl { font-size: 13px; font-weight: 600; min-width: 160px; text-align: center; }
+
+  select {
+    padding: 5px 8px; border: 1px solid #e0e0e0;
+    border-radius: 6px; font-size: 13px; background: #fff;
+  }
+
+  .add-btn {
+    padding: 6px 14px; background: #1a237e; color: #fff;
+    border: none; border-radius: 6px; font-size: 12px;
+    cursor: pointer; font-weight: 500;
+  }
+  .add-btn:hover { background: #283593; }
+
+  .content { padding: 16px 20px; }
+
+  .grid-wrap { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; }
+
+  .grid-header {
+    display: grid; background: #f9f9f9;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  .gh-cell {
+    padding: 8px 10px; font-size: 11px; font-weight: 600;
+    color: #666; text-transform: uppercase; letter-spacing: 0.05em;
+    border-right: 1px solid #e8e8e8; text-align: center;
+  }
+  .gh-cell:last-child { border-right: none; }
+  .gh-cell.lbl { text-align: left; }
+
+  .grid-row { display: grid; border-bottom: 1px solid #f0f0f0; }
+  .grid-row:last-child { border-bottom: none; }
+  .grid-row:hover { background: #fafafa; }
+
+  .row-lbl {
+    padding: 10px 12px; font-size: 12px; font-weight: 600;
+    color: #333; border-right: 1px solid #e8e8e8;
+    display: flex; align-items: center;
+  }
+
+  .gcell {
+    padding: 6px 5px; border-right: 1px solid #e8e8e8;
+    min-height: 54px; cursor: pointer; transition: background 0.1s;
+    display: flex; flex-direction: column; gap: 3px;
+    position: relative;
+  }
+  .gcell:last-child { border-right: none; }
+  .gcell:hover { background: #e8eaf6; }
+  .gcell:hover .plus-hint { display: flex; }
+
+  .plus-hint {
+    display: none; position: absolute; bottom: 4px; right: 4px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #1a237e; color: #fff;
+    font-size: 12px; align-items: center; justify-content: center;
+  }
+
+  .chip {
+    padding: 2px 7px; border-radius: 5px; font-size: 10px;
+    font-weight: 600; cursor: pointer; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+    transition: opacity 0.1s;
+  }
+  .chip:hover { opacity: 0.75; }
+  .chip.s  { background: #ede7f6; color: #4527a0; }
+  .chip.ds { background: #e8f5e9; color: #1b5e20; }
+  .chip.tn { background: #fff3e0; color: #e65100; }
+  .chip.gd { background: #fce4ec; color: #880e4f; }
+
+  /* Modal */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 12px; padding: 20px;
+    width: 360px; max-width: 95vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  }
+  .modal-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; color: #1a237e; }
+  .flabel { font-size: 12px; color: #666; margin-bottom: 4px; display: block; }
+  .fgroup { margin-bottom: 12px; }
+  .finput {
+    width: 100%; padding: 8px 10px; border: 1px solid #e0e0e0;
+    border-radius: 7px; font-size: 13px; color: #1f1f1f;
+  }
+  .finput:focus { outline: 2px solid #1a237e; border-color: transparent; }
+  .frow { display: flex; gap: 10px; }
+  .mactions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  .mbtn-cancel {
+    padding: 7px 16px; border: 1px solid #e0e0e0; border-radius: 7px;
+    font-size: 13px; cursor: pointer; background: #fff;
+  }
+  .mbtn-save {
+    padding: 7px 18px; background: #1a237e; color: #fff;
+    border: none; border-radius: 7px; font-size: 13px;
+    cursor: pointer; font-weight: 600;
+  }
+  .mbtn-save:hover { background: #283593; }
+
+  .empty-msg {
+    text-align: center; padding: 40px 20px; color: #aaa; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">📅 Засгийн газрын цаг хуваарь</div>
+    <div class="header-sub">Удирдлагуудын ажлын төлөвлөгөөний систем</div>
+  </div>
+  <div class="view-tabs">
+    <button class="view-tab" onclick="setView('year',this)">Жилээр</button>
+    <button class="view-tab" onclick="setView('quarter',this)">Улирлаар</button>
+    <button class="view-tab active" onclick="setView('month',this)">Сараар</button>
+    <button class="view-tab" onclick="setView('week',this)">7 хоногоор</button>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="role-pill s"  id="pill-s"  onclick="toggleRole('s')">Сайд</div>
+  <div class="role-pill ds" id="pill-ds" onclick="toggleRole('ds')">Дэд сайд</div>
+  <div class="role-pill tn" id="pill-tn" onclick="toggleRole('tn')">ТНБ дарга</div>
+  <div class="role-pill gd" id="pill-gd" onclick="toggleRole('gd')">Газар/Хэлтсийн дарга</div>
+
+  <div class="nav-group">
+    <button class="nav-btn" onclick="navigate(-1)">&#8249;</button>
+    <div class="period-lbl" id="period-lbl"></div>
+    <button class="nav-btn" onclick="navigate(1)">&#8250;</button>
+    <select id="yr-sel" onchange="changeYear(this.value)">
+      <option>2024</option>
+      <option selected>2025</option>
+      <option>2026</option>
+    </select>
+    <button class="nav-btn" onclick="goToday()" title="Өнөөдөр" style="font-size:11px;width:auto;padding:0 8px;">Өнөөдөр</button>
+    <button class="add-btn" onclick="openModal(null,null)">+ Нэмэх</button>
+  </div>
+</div>
+
+<div class="content" id="content"></div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-title">Арга хэмжээ нэмэх</div>
+    <div class="fgroup">
+      <label class="flabel">Гарчиг</label>
+      <input class="finput" id="f-title" placeholder="Арга хэмжээний нэр..." />
+    </div>
+    <div class="frow">
+      <div class="fgroup" style="flex:1">
+        <label class="flabel">Албан тушаал</label>
+        <select class="finput" id="f-role">
+          <option value="s">Сайд</option>
+          <option value="ds">Дэд сайд</option>
+          <option value="tn">ТНБ дарга</option>
+          <option value="gd">Газар/Хэлтсийн дарга</option>
+        </select>
+      </div>
+      <div class="fgroup" style="flex:1">
+        <label class="flabel">Төрөл</label>
+        <select class="finput" id="f-type">
+          <option value="meeting">Хурал</option>
+          <option value="report">Тайлан</option>
+          <option value="travel">Томилолт</option>
+          <option value="event">Арга хэмжээ</option>
+          <option value="inspection">Шалгалт</option>
+        </select>
+      </div>
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Тайлбар</label>
+      <input class="finput" id="f-desc" placeholder="Нэмэлт мэдээлэл..." />
+    </div>
+    <div class="mactions">
+      <button class="mbtn-cancel" onclick="closeModal()">Болих</button>
+      <button class="mbtn-save" onclick="saveEvent()">Хадгалах</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ROLES = {
+  s:  'Сайд',
+  ds: 'Дэд сайд',
+  tn: 'ТНБ дарга',
+  gd: 'Газар/Хэлтсийн дарга'
+};
+const SHORTS = { s:'С', ds:'ДС', tn:'ТНБ', gd:'ГХД' };
+const MONTHS = ['Нэгдүгээр сар','Хоёрдугаар сар','Гуравдугаар сар','Дөрөвдүгээр сар','Тавдугаар сар','Зургадугаар сар','Долдугаар сар','Наймдугаар сар','Есдүгээр сар','Аравдугаар сар','Арван нэгдүгээр сар','Арван хоёрдугаар сар'];
+const MSHORT = ['1-р','2-р','3-р','4-р','5-р','6-р','7-р','8-р','9-р','10-р','11-р','12-р'];
+const QUARTERS = ['I улирал','II улирал','III улирал','IV улирал'];
+const WDAYS = ['Да','Мя','Лх','Пү','Ба','Бя','Ня'];
+
+let view = 'month', year = 2025, period = 0;
+let activeRoles = { s:true, ds:true, tn:true, gd:true };
+let pendingCell = null;
+let events = [
+  {id:1,year:2025,period:0,col:0,role:'s',title:'Яамны нээлтийн хурал',type:'meeting'},
+  {id:2,year:2025,period:0,col:1,role:'ds',title:'Төсвийн хэлэлцүүлэг',type:'meeting'},
+  {id:3,year:2025,period:0,col:2,role:'tn',title:'Тайлан шалгалт',type:'report'},
+  {id:4,year:2025,period:1,col:0,role:'gd',title:'Газрын удирдлагуудтай уулзалт',type:'meeting'},
+  {id:5,year:2025,period:1,col:1,role:'s',title:'Олон улсын хурал',type:'event'},
+  {id:6,year:2025,period:2,col:3,role:'tn',title:'Хагас жилийн тайлан',type:'report'},
+  {id:7,year:2025,period:3,col:2,role:'s',title:'Жилийн дүгнэлт',type:'report'},
+  {id:8,year:2025,period:3,col:3,role:'ds',title:'Шагнал гардуулах',type:'event'},
+];
+let nid = 9;
+
+function setView(v, el) {
+  view = v; period = 0;
+  document.querySelectorAll('.view-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+function navigate(d) {
+  const max = {year:0,quarter:3,month:11,week:51}[view];
+  period += d;
+  if (period < 0) { year--; period = max; }
+  else if (period > max) { year++; period = 0; }
+  document.getElementById('yr-sel').value = year;
+  render();
+}
+function changeYear(y) { year = parseInt(y); render(); }
+function goToday() { year = 2025; period = 0; render(); }
+function toggleRole(r) {
+  activeRoles[r] = !activeRoles[r];
+  document.getElementById('pill-' + r).classList.toggle('off', !activeRoles[r]);
+  render();
+}
+function openModal(p, c) {
+  pendingCell = { period: p ?? period, col: c ?? 0 };
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-desc').value = '';
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('overlay').classList.remove('open'); }
+function saveEvent() {
+  const t = document.getElementById('f-title').value.trim();
+  if (!t) { document.getElementById('f-title').focus(); return; }
+  events.push({ id: nid++, year, period: pendingCell.period, col: pendingCell.col,
+    role: document.getElementById('f-role').value,
+    type: document.getElementById('f-type').value,
+    title: t, desc: document.getElementById('f-desc').value });
+  closeModal(); render();
+}
+function removeEvt(id) {
+  if (confirm('Арга хэмжээг устгах уу?')) { events = events.filter(e => e.id !== id); render(); }
+}
+
+function getEvts(p, c, r) {
+  return events.filter(e => e.year === year && e.period === p && e.col === c && e.role === r && activeRoles[r]);
+}
+
+function chip(e) {
+  return `<div class="chip ${e.role}" onclick="event.stopPropagation();removeEvt(${e.id})" title="${e.title} (дарж устгах)">${SHORTS[e.role]}: ${e.title}</div>`;
+}
+
+function buildGrid(cols, colLabels, rows) {
+  const gtc = `grid-template-columns: 170px ${cols.map(()=>'1fr').join(' ')}`;
+  let h = `<div class="grid-wrap"><div class="grid-header" style="${gtc}">
+    <div class="gh-cell lbl">Албан тушаал</div>
+    ${colLabels.map(l => `<div class="gh-cell">${l}</div>`).join('')}
+  </div>`;
+  rows.forEach(([rk, rl]) => {
+    h += `<div class="grid-row" style="${gtc}"><div class="row-lbl">${rl}</div>`;
+    cols.forEach((ci, idx) => {
+      const evts = getEvts(ci.p, ci.c, rk);
+      h += `<div class="gcell" onclick="openModal(${ci.p},${ci.c})">
+        ${evts.map(chip).join('')}
+        <span class="plus-hint">+</span>
+      </div>`;
+    });
+    h += '</div>';
+  });
+  h += '</div>';
+  return h;
+}
+
+function render() {
+  const lbl = document.getElementById('period-lbl');
+  const el = document.getElementById('content');
+  const rows = Object.entries(ROLES).filter(([k])=>activeRoles[k]);
+
+  if (view === 'year') {
+    lbl.textContent = year + ' он';
+    const cols = MSHORT.map((_,i) => ({p:i,c:0}));
+    el.innerHTML = buildGrid(cols, MSHORT.map(m=>m+' сар'), rows);
+  } else if (view === 'quarter') {
+    lbl.textContent = year + ' — ' + QUARTERS[period];
+    const sm = period * 3;
+    const cols = [0,1,2].map(i => ({p:sm+i,c:0}));
+    el.innerHTML = buildGrid(cols, MONTHS.slice(sm,sm+3), rows);
+  } else if (view === 'month') {
+    lbl.textContent = year + ' — ' + MONTHS[period];
+    const cols = [0,1,2,3].map(i => ({p:period,c:i}));
+    el.innerHTML = buildGrid(cols, ['1-р долоо хоног','2-р долоо хоног','3-р долоо хоног','4-р долоо хоног'], rows);
+  } else {
+    lbl.textContent = year + ' — ' + (period+1) + '-р долоо хоног';
+    const cols = WDAYS.map((_,i) => ({p:period,c:i}));
+    el.innerHTML = buildGrid(cols, WDAYS, rows);
+  }
+
+  if (!rows.length) el.innerHTML = '<div class="empty-msg">Харуулах удирдлага сонгоогүй байна.</div>';
+}
+
+render();
+</script>
+</body>
+</html>
